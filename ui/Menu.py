@@ -46,10 +46,14 @@ class Menu:
 
         self.ui.title(f"📂 Carregar {value_type_name.title()}")
 
-        # Llistar arxius .pkl
-        files = [f for f in os.listdir(directory) if f.endswith(extension)]
-        
+        # Llistar arxius a la carpeta principal
+        files = [f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f)) and f.endswith(extension)]
         if files:
+            self.ui.title(
+                text=os.path.basename(directory) or directory,
+                style=Styles.subtitle_style,
+                pady=5
+            )
             for idx, filename in enumerate(files, 1):
                 self.ui.button(
                     text=f"{idx}. {filename}",
@@ -57,7 +61,31 @@ class Menu:
                     style={"width": 300},
                     pady=5
                 )
-        else:
+
+        # Llistar subcarpetes i els seus arxius
+        subdirs = [d for d in os.listdir(directory) if os.path.isdir(os.path.join(directory, d))]
+        for subdir in subdirs:
+            subdir_path = os.path.join(directory, subdir)
+            sub_files = [f for f in os.listdir(subdir_path) if os.path.isfile(os.path.join(subdir_path, f)) and f.endswith(extension)]
+            if sub_files:
+                frame = self.ui.frame()
+                self.ui.title(
+                    text=subdir,
+                    style=Styles.subtitle_style,
+                    pady=5,
+                    parent=frame
+                )
+                for idx, filename in enumerate(sub_files, 1):
+                    path = subdir + "/" + filename
+                    self.ui.button(
+                        text=f"{idx}. {filename}",
+                        command=lambda f=path: self._load_value(f, load_method, go_to),
+                        style={"width": 300},
+                        pady=5,
+                        parent=frame
+                    )
+
+        if not files and not subdirs:
             self.ui.title(
                 text="No s'han trobat datasets",
                 style=Styles.subtitle_style,
@@ -115,3 +143,39 @@ class Menu:
                 style=Styles.subtitle_style,
                 pady=10
             )
+
+    # Show Plot
+    def show_plot(self, plot_method, back_menu):
+        self.clear_frame()
+        self.app.title("Visualització")
+
+        self.ui.title("📊 Visualització")
+
+        try:
+            plt, fig, _ = plot_method()
+            self.ui.plot(fig)
+            plt.close(fig)
+
+            def open_plot():
+                plt2, fig2, _ = plot_method()
+                plt2.show()
+                plt2.close(fig2)
+
+            self.ui.button(
+                "Obrir gràfica",
+                open_plot,
+                pady=15
+            )
+        except Exception as e:
+            self.ui.title(
+                text=f"⛔ Error: {str(e)}",
+                style=Styles.subtitle_style,
+                pady=10
+            )
+
+        def on_back():
+            back_menu()
+            plt.clf()
+            plt.close('all')
+
+        self.ui.back_button(on_back)

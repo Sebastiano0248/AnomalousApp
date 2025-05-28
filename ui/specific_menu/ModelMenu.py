@@ -8,6 +8,8 @@ from anomalouslib.analysis.DataAnalyzer import DataAnalyzer
 
 
 import pandas as pd
+import numpy as np
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 class ModelMenu(Menu):
     def __init__(self, back_menu):
@@ -17,11 +19,52 @@ class ModelMenu(Menu):
         self.back_menu = back_menu
 
         # Paths
-        self.data_dir = self.load_param("path", "dataset>generated")
+        self.data_dir = self.load_param("path", "dataset>undefined")
         self.model_dir = self.load_param("path", "model")
         self.prediction = self.load_param("path", "result>prediction")
 
     def show_model_menu(self):
+
+        # import matplotlib.pyplot as plt
+
+        # # Ejemplo: Gráfica de una función seno
+        # x = np.linspace(0, 10, 100)
+        # y = np.sin(x)
+
+        # def mostrar_en_app():
+        #     fig = plt.Figure(figsize=(6, 4))
+        #     ax = fig.add_subplot(111)
+        #     ax.plot(x, y, label='sin(x)')
+        #     ax.set_title('Ejemplo de Gráfica')
+        #     ax.set_xlabel('Eje X')
+        #     ax.set_ylabel('Eje Y')
+        #     ax.legend()
+        #     ax.grid(True)
+
+        #     canvas = FigureCanvasTkAgg(fig, master=self.app.main_frame)
+        #     canvas.draw()
+        #     canvas.get_tk_widget().pack(pady=20)
+
+        # def mostrar_fuera_app():
+        #     plt.figure(figsize=(6, 4))
+        #     plt.plot(x, y, label='sin(x)')
+        #     plt.title('Ejemplo de Gráfica')
+        #     plt.xlabel('Eje X')
+        #     plt.ylabel('Eje Y')
+        #     plt.legend()
+        #     plt.grid(True)
+        #     plt.show()
+
+        # self.ui.button(
+        #     "Mostrar gráfica en la app",
+        #     mostrar_en_app,
+        #     pady=10
+        # )
+        # self.ui.button(
+        #     "Mostrar gráfica fuera de la app",
+        #     mostrar_fuera_app,
+        #     pady=10
+        # )
         self.show_dataset_list()
     
     def show_dataset_list(self):
@@ -61,17 +104,29 @@ class ModelMenu(Menu):
 
         self.ui.button(
             "📈 Mostrar Trajectòries",
-            lambda: da.mostrar_trajectories()
+            lambda: self.show_plot(
+                lambda: da.mostrar_trajectories(draw=False),
+                lambda: self.show_statistical_analysis(dataset)
+            ),
+            pady=10
         )
 
         self.ui.button(
             "📉 Evolució Temporal",
-            lambda: da.mostrar_evolucio()
+            lambda: self.show_plot(
+                lambda: da.mostrar_evolucio(draw=False),
+                lambda: self.show_statistical_analysis(dataset)
+            ),
+            pady=10
         )
 
         self.ui.button(
             "📊 Histograma 3D",
-            lambda: da.mostrar_histograma()
+            lambda: self.show_plot(
+                lambda: da.mostrar_histograma(draw=False),
+                lambda: self.show_statistical_analysis(dataset)
+            ),
+            pady=10
         )
 
         self.ui.back_button(lambda: self.show_analysis_menu(dataset))

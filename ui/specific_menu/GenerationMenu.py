@@ -39,7 +39,7 @@ class GenerationMenu(Menu):
 
         self.ui.title(
             "Configuració actual:",
-            father_frame=config_frame,
+            parent=config_frame,
             style={"font": ("Arial", 16, "bold"), "anchor": "w", "width": 100},
         ).pack(pady=(5, 0), padx=10, anchor="w")
 
@@ -49,7 +49,7 @@ class GenerationMenu(Menu):
                 f"• Passos: {self.default_dataset_config['num_passos']}\n"
                 f"• Paràmetres aleatoris: {'Sí' if self.default_dataset_config.get('random_params', False) else 'No'}"
             ),
-            father_frame=config_frame,
+            parent=config_frame,
             style={"font": ("Arial", 14), "anchor": "w", "justify": "left", "width": 100},
         ).pack(pady=(0, 5), padx=20, anchor="w")
         

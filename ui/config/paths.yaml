@@ -10,6 +10,7 @@ model: "./models/"
   # trained: "./models/trained_models/"
 
 result:
+  undefined: "./results/"
   prediction: "./results/predictions/"
   report: "./results/reports/"
   visualization: "./results/visualizations/"
