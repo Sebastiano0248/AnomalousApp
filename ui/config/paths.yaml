@@ -1,0 +1,15 @@
+dataset:
+  undefined: "./data/"
+  raw: "./data/raw/"
+  generated: "./data/generated/"
+
+cache:
+  dataset_generation: "./cache/config.json"
+
+model: "./models/"
+  # trained: "./models/trained_models/"
+
+result:
+  prediction: "./results/predictions/"
+  report: "./results/reports/"
+  visualization: "./results/visualizations/"

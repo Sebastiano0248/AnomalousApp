@@ -1,0 +1,8 @@
+generated_dataset:
+  random_walk:
+    nonstop: [[1, 0], [-1, 0], [0, 1], [0, -1]]
+    chill_stop: [[1, 0], [-1, 0], [0, 1], [0, -1], [0, 0]]
+    hard_stop: [[1, 0], [-1, 0], [0, 1], [0, -1], [0, 0], [0, 0], [0, 0], [0, 0]]
+  brownian_motion:
+    delta_t: 1
+    sigma: 1
