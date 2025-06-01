@@ -1,10 +1,11 @@
 from ui.Menu import Menu
-from anomalouslib.models.testing_utils import predict_continuous
-from anomalouslib.data.preprocessing import generate_tensors
+from anomalouslib.models.testing_utils import predict_continuous, predict_discrete
+from anomalouslib.data.preprocessing import generate_regressor_tensors, generate_classification_tensors
 from anomalouslib.utils.load_save_like import load_from_pickle, save_to_csv
 from anomalouslib.models.model_handler import load_model
 from ui.constants import Styles
 from anomalouslib.analysis.DataAnalyzer import DataAnalyzer
+from anomalouslib.analysis.ModelAnalyzer import ModelAnalyzer
 
 
 import pandas as pd
@@ -18,53 +19,17 @@ class ModelMenu(Menu):
         # Variables globals
         self.back_menu = back_menu
 
+        # Variables del model
+        self.dataset = None
+        self.model = None
+        self.le = None
+
         # Paths
         self.data_dir = self.load_param("path", "dataset>undefined")
         self.model_dir = self.load_param("path", "model")
         self.prediction = self.load_param("path", "result>prediction")
 
     def show_model_menu(self):
-
-        # import matplotlib.pyplot as plt
-
-        # # Ejemplo: Gráfica de una función seno
-        # x = np.linspace(0, 10, 100)
-        # y = np.sin(x)
-
-        # def mostrar_en_app():
-        #     fig = plt.Figure(figsize=(6, 4))
-        #     ax = fig.add_subplot(111)
-        #     ax.plot(x, y, label='sin(x)')
-        #     ax.set_title('Ejemplo de Gráfica')
-        #     ax.set_xlabel('Eje X')
-        #     ax.set_ylabel('Eje Y')
-        #     ax.legend()
-        #     ax.grid(True)
-
-        #     canvas = FigureCanvasTkAgg(fig, master=self.app.main_frame)
-        #     canvas.draw()
-        #     canvas.get_tk_widget().pack(pady=20)
-
-        # def mostrar_fuera_app():
-        #     plt.figure(figsize=(6, 4))
-        #     plt.plot(x, y, label='sin(x)')
-        #     plt.title('Ejemplo de Gráfica')
-        #     plt.xlabel('Eje X')
-        #     plt.ylabel('Eje Y')
-        #     plt.legend()
-        #     plt.grid(True)
-        #     plt.show()
-
-        # self.ui.button(
-        #     "Mostrar gráfica en la app",
-        #     mostrar_en_app,
-        #     pady=10
-        # )
-        # self.ui.button(
-        #     "Mostrar gráfica fuera de la app",
-        #     mostrar_fuera_app,
-        #     pady=10
-        # )
         self.show_dataset_list()
     
     def show_dataset_list(self):
@@ -150,9 +115,6 @@ class ModelMenu(Menu):
             self.app.title("Paràmetres del Model")
             self.ui.title("📊 Paràmetres del Model")
 
-            self.clear_frame()
-            self.ui.title("📊 Paràmetres del Model")
-
             self.ui.title(
                 text="Selecciona el paràmetre a inferir",
                 style=Styles.subtitle_style,
@@ -160,24 +122,115 @@ class ModelMenu(Menu):
             )
 
             for param in params:
-                self.param = param
                 self.ui.button(
-                    self.param.capitalize(),
-                    lambda: self.show_results(self.model),
+                    param.capitalize(),
+                    lambda p=param: self.select_analysis(self.model, p),
                     pady=10
                 )
         else:
             self.param = params[0]
-            self.show_results(model)
+            self.select_analysis(model, self.param)
             return
 
         self.ui.back_button(lambda: self.show_model_list(self.dataset))
+
+    def select_analysis(self, model, param, le=None):
+        self.param = param
+
+        if isinstance(model, tuple):
+            self.model = model[0]
+            self.le = model[1]
+        else:
+            self.model = model
+            self.le = None
+
+        ma = ModelAnalyzer(self.dataset)
+        self.clear_frame()
+        self.ui.title("📊 Anàlisi del Model")
+
+        self.ui.button(
+            "📈 Inferència",
+            lambda: self.show_results(),
+            pady=10
+        )
+        
+        if self.le is not None:
+            self.ui.button(
+                "📊 Patrons de Trajectòria Discreta",
+                lambda: self.show_plot(
+                    lambda: ma.analyze_discrete_trajectory_patterns(self.model, self.param, self.le, draw=False),
+                    lambda: self.select_analysis(self.model, self.param, self.le)
+                ),
+                pady=10
+            )
+        else:
+            self.ui.button(
+                "📊 Patrons de Trajectòria Contínua",
+                lambda: self.show_plot(
+                    lambda: ma.analyze_continuous_trajectory_patterns(self.model, self.param, draw=False),
+                    lambda: self.select_analysis(self.model, self.param)
+                ),
+                pady=10
+            )
+
+        self.ui.back_button(lambda: self.decide_param(self.model))
     
-    def show_results(self, model):
-        self.model = model
+    def show_results(self):
+
+        def predict_discrete_probabilities(model, X_input, y_input=None, le=None, num_samples=None, to_print=True):
+            import torch
+            """
+            Predice clases discretas a partir de probabilidades.
+            Añade columna 'real_type' con los valores de y_input (decodificados si le está presente).
+            """
+            if num_samples is not None:
+                X_input = X_input[:num_samples]
+            if y_input is not None:
+
+                y_input = y_input[:num_samples]
+
+            self.model.eval()
+            with torch.no_grad():
+                output = self.model(X_input)
+                probabilities = output.cpu().numpy()
+                predicted_indices = probabilities.argmax(axis=1)
+
+            results = {}
+            if le is not None:
+                predicted_labels = le.inverse_transform(predicted_indices)
+                results['Predicted Label'] = predicted_labels
+            else:
+                results['Predicted Label'] = predicted_indices
+
+            # Añadir columna real_type
+            if y_input is not None:
+                if le is not None:
+                    y_numpy = y_input.cpu().numpy()
+                    predicted_class_indices = np.argmax(y_numpy, axis=1)
+                    real_types = le.inverse_transform(predicted_class_indices)
+                else:
+                    real_types = y_input.cpu().numpy()
+                results['real_type'] = real_types
+
+            df = pd.DataFrame(results)
+
+            if to_print:
+                print("Predicciones:")
+                for i, row in df.iterrows():
+                    if 'real_type' in df.columns:
+                        print(f"Ejemplo {i+1}: Predicho = {row['Predicted Label']}, Real = {row['real_type']}")
+                    else:
+                        print(f"Ejemplo {i+1}: Predicho = {row['Predicted Label']}")
+
+            return df
+        
         lentgh = len(self.dataset)
-        x, y = generate_tensors(self.dataset, self.trajectory_type, self.param)
-        results = predict_continuous(self.model, x, y, to_print=False)
+        if self.le is not None:
+            x, y = generate_classification_tensors(self.dataset, self.param, self.le)
+            results = predict_discrete_probabilities(self.model, x, y, self.le, to_print=False)
+        else:
+            x, y = generate_regressor_tensors(self.dataset, self.trajectory_type, self.param)
+            results = predict_continuous(self.model, x, y, to_print=False)
         
         self.clear_frame()
         self.ui.title("📋 Resultats de la Inferència")
@@ -203,9 +256,9 @@ class ModelMenu(Menu):
                         self.prediction,
                         filename
                     ),
-                    lambda: self.show_results(self.model)
+                    lambda: self.show_results()
                 ),
             pady=10
         )
 
-        self.ui.back_button(lambda: self.show_model_list(self.dataset))
+        self.ui.back_button(lambda: self.select_analysis(self.model, self.param, self.le))
