@@ -107,7 +107,12 @@ class ModelMenu(Menu):
         )
 
     def decide_param(self, model):
-        self.model = model
+        if isinstance(model, tuple):
+            self.model = model[0]
+            self.le = model[1]
+        else:
+            self.model = model
+            self.le = None
         params = list(self.dataset["attributes"].iloc[0].keys())
         self.trajectory_type = self.dataset["attributes"].iloc[0]["trajectory_type"]
         if len(params) > 1:
@@ -136,13 +141,6 @@ class ModelMenu(Menu):
 
     def select_analysis(self, model, param, le=None):
         self.param = param
-
-        if isinstance(model, tuple):
-            self.model = model[0]
-            self.le = model[1]
-        else:
-            self.model = model
-            self.le = None
 
         ma = ModelAnalyzer(self.dataset)
         self.clear_frame()
@@ -173,7 +171,7 @@ class ModelMenu(Menu):
                 pady=10
             )
 
-        self.ui.back_button(lambda: self.decide_param(self.model))
+        self.ui.back_button(lambda: self.show_model_list(self.dataset))
     
     def show_results(self):
 
