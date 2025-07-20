@@ -241,7 +241,9 @@ class ModelMenu(Menu):
             # Afegir una última fila amb punts suspensius a cada columna
             ellipsis_row = {col: "..." for col in results.columns}
             results_to_show = pd.concat([results.head(10), pd.DataFrame([ellipsis_row])], ignore_index=True)
-        
+        else:
+            results_to_show = results
+
         self.ui.table_for_dataframe(results_to_show, pady=20)
 
         self.ui.button(

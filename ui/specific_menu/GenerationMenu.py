@@ -26,7 +26,7 @@ class GenerationMenu(Menu):
             with open(self.config_dataset_generation) as f:
                 return json.load(f)
         except:
-            print("No s'ha pogut carregar la configuració. S'està creant una nova configuració per defecte.")
+            print("Could not load configuration. Creating a new default configuration.")
             return {"num_particules": 5, "num_passos": 1000, "random_params": 0}
 
     def show_generation_menu(self):
